@@ -41,7 +41,14 @@ const AcadAdmin = () => {
                 </span>
                 {expandedSections.documents && (
                     <ul className="pl-5">
-                        <li>View Requests</li>
+                        <li className="py-1">
+                            <Link 
+                                to="/admin/documents" 
+                                className="text-gray-700 hover:text-primary hover:underline flex items-center gap-2"
+                            >
+                                Manage Applications
+                            </Link>
+                        </li>
                     </ul>
                 )}
                 </li>

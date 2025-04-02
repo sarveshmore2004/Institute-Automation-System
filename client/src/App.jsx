@@ -34,6 +34,7 @@ import LoginPage from './components/LoginPage/Login.jsx';
 import DropCourse from './components/dropCourse/drop.jsx';
 import CourseAnnouncements from './components/Announcements/CourseAnnouncements.jsx';
 import MyCourses from './components/mycourses/myCourse.jsx';
+import DocumentManager from './pages/Documents/admin/DocumentManager.jsx';
 
 import { RoleProvider } from './context/Rolecontext.jsx';
 import StudentProfile from './pages/ProfilePage.jsx';
@@ -173,6 +174,10 @@ function App() {
                 {
                     path: "/profile",
                     element: <StudentProfile/>
+                },
+                {
+                    path: "/admin/documents",
+                    element: <DocumentManager />,
                 },
             ],
         },
