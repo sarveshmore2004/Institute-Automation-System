@@ -51,7 +51,7 @@ const FeeReceiptPage = () => {
         { particular: "Payable Amount", amount: "134100.00" },
         { particular: "Remarks", amount: "null" },
     ];
-
+    
     const handleGenerate = async () => {
         if (!selectedSemester) return;
         setIsLoading(true);
