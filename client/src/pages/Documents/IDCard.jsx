@@ -43,6 +43,17 @@ const IDCardPage = () => {
     }
   };
 
+  const handleDownload = () => {
+    if (pdfBlob) {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(pdfBlob);
+      link.download = "Student_ID_Card.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+  
   return (
     <DocumentLayout title="ID Card" style={{ display: 'none' }}>
       <div className="max-w-3xl mx-auto space-y-6 p-6 bg-gradient-to-b from-blue-50 to-gray-100 rounded-lg shadow-lg">
