@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
-import styles from "./FeePayment.module.css"; // Ensure this path is correct
-import { pdf } from "@react-pdf/renderer"; // Import pdf function
-import FeeReceiptPDF from "../components/documentSection/FeeReceiptPDF"; // Import your PDF component structure
-import axios from 'axios'; // <--- Import Axios
+// Remove CSS Module import: import styles from "./FeePayment.module.css";
+import { pdf } from "@react-pdf/renderer";
+import FeeReceiptPDF from "../components/documentSection/FeeReceiptPDF";
+import axios from 'axios';
 
-// This component assumes FeeReceiptPDF exists at the specified path
-// and accepts props: student, semester, feeData, isPaid, transactionDetails
-
-// --- Helper function to load Razorpay script ---
+// Helper function to load Razorpay script (remains the same)
 const loadRazorpayScript = (src) => {
-    // ... (paste the function from step 2 above) ...
     return new Promise((resolve) => {
         const script = document.createElement('script');
         script.src = src;
@@ -18,29 +14,28 @@ const loadRazorpayScript = (src) => {
         document.body.appendChild(script);
     });
 };
-// --- The Razorpay Checkout script URL ---
 const RAZORPAY_SCRIPT_URL = 'https://checkout.razorpay.com/v1/checkout.js';
 
 const FeePayment = () => {
-    // --- State ---
-    const [isPaid, setIsPaid] = useState(false); // Tracks if the current fee is paid
-    const [paymentDetails, setPaymentDetails] = useState(null); // Holds details of the successful transaction
-    const [isLoading, setIsLoading] = useState(true); // For initial page load and payment processing
-    const [isDownloading, setIsDownloading] = useState(false); // For PDF download button loading state
+    // --- State (remains the same) ---
+    const [isPaid, setIsPaid] = useState(false);
+    const [paymentDetails, setPaymentDetails] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDownloading, setIsDownloading] = useState(false);
 
-    // --- Static Data (Replace with API fetched data where applicable) ---
+    // --- Static Data (remains the same) ---
     const student = {
         rollNumber: "220101125",
-        name: "Priyanshu Pratyay", // Use the correct name from original component
-        photo: "/tnmy.png", // Ensure this path relative to public folder is correct
+        name: "Priyanshu Pratyay",
+        photo: "/tnmy.png",
         branch: "Computer Science & Engineering",
         programme: "B.Tech",
-        currentSemester: "July-Nov 2024", // Example semester
-        // Add other fields if FeeReceiptPDF expects them, e.g., department
+        currentSemester: "July-Nov 2024",
         department: "Computer Science & Engineering",
+        email: "p.pratyay@iitg.ac.in", // Added for prefill example
+        contact: "9876543210",       // Added for prefill example
     };
 
-    // Fee breakdown structure
     const feeParticularsData = [
         { particular: "Tuition Fees", amount: "100000.00" },
         { particular: "Examination Fee", amount: "500.00" },
@@ -50,85 +45,71 @@ const FeePayment = () => {
         { particular: "Hostel Fund", amount: "600.00" },
         { particular: "Hostel Rent", amount: "1000.00" },
         { particular: "Electricity and Water Charges", amount: "2500.00" },
-        { particular: "Adjustable Mess Advance", amount: "20000.00" }, // Renamed slightly for clarity
+        { particular: "Adjustable Mess Advance", amount: "20000.00" },
         { particular: "Students Brotherhood Fund", amount: "50.00" },
         { particular: "Academic Facilities Fee", amount: "2500.00" },
         { particular: "Hostel Maintenance Charge", amount: "3000.00" },
         { particular: "Students Travel Assistance Fund", amount: "50.00" },
     ];
 
-    // Calculate summary values
     const calculatedTotal = feeParticularsData.reduce(
-        (sum, item) => sum + parseFloat(item.amount || 0), // Handle potential missing amount
+        (sum, item) => sum + parseFloat(item.amount || 0),
         0
     );
-    const adjustmentAmount = 0.00; // Example adjustment
-    const payableAmount = (calculatedTotal - adjustmentAmount)*0 + 2;
+    const adjustmentAmount = 0.00;
+    // DEV ONLY: Set payable amount to 2 INR for easy testing
+    const payableAmount = (calculatedTotal - adjustmentAmount) * 0 + 2;
 
-    // Prepare data structure needed for the FeeReceiptPDF component
-    // Includes particulars and summary rows
     const feeDataForPDF = [
         ...feeParticularsData,
         { particular: "Total Amount", amount: calculatedTotal.toFixed(2) },
         { particular: "Adjustment Amount", amount: adjustmentAmount.toFixed(2) },
         { particular: "Payable Amount", amount: payableAmount.toFixed(2) },
-        // Add Remarks if FeeReceiptPDF expects it, otherwise it can be omitted
-        // { particular: "Remarks", amount: isPaid ? "Payment Received" : "Due" }
     ];
 
-    // Data for the UI summary table
     const feeSummary = {
         semester: student.currentSemester,
-        feeType: "Registration/Enrollment Fee", // Example fee type for overview
+        feeType: "Registration/Enrollment Fee",
         totalFee: calculatedTotal,
         feePaid: isPaid ? payableAmount : 0.00,
         feeToBePaid: isPaid ? 0.00 : payableAmount,
-        remarks: isPaid ? "Paid" : "Due", // UI remark
+        remarks: isPaid ? "Paid" : "Due",
         payableAmount: payableAmount,
-        detailedRemarks: isPaid ? "Payment Received" : null, // Detailed remark for breakdown table
+        detailedRemarks: isPaid ? "Payment Received" : null,
     };
 
-    // --- Simulate fetching initial fee status ---
+    // --- useEffect (remains the same logic) ---
     useEffect(() => {
         const fetchFeeStatus = async () => {
             setIsLoading(true);
-            // Simulate API call delay
             await new Promise(resolve => setTimeout(resolve, 800));
-
-            // --- SIMULATION ---
-            // Change this value to test the two states (paid/unpaid) on initial load
-            const alreadyPaid = false;
-            // --- END SIMULATION ---
-
+            const alreadyPaid = false; // Simulate initial state
             setIsPaid(alreadyPaid);
             if (alreadyPaid) {
-                // If already paid, set mock payment details required for the receipt
                 setPaymentDetails({
-                    slNo: 1, // Example serial number
+                    slNo: 1,
                     feeType: feeSummary.feeType,
-                    feeAmount: feeSummary.payableAmount, // Crucial: Amount actually paid
-                    transactionId: "PAID_PREVIOUSLY_123", // Example ID
-                    dateTime: "2024-07-15 11:30:00", // Example timestamp
+                    feeAmount: feeSummary.payableAmount,
+                    transactionId: "PAID_PREVIOUSLY_123",
+                    dateTime: "2024-07-15 11:30:00",
                     status: "Success",
                 });
             } else {
-                setPaymentDetails(null); // Ensure no details if not paid
+                setPaymentDetails(null);
             }
-            setIsLoading(false); // Done loading initial status
+            setIsLoading(false);
         };
-
         fetchFeeStatus();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Empty dependency array means this runs only once on mount
+    }, []);
 
-    // --- Handlers ---
+    // --- Handlers (remain the same logic) ---
 
-    // --- UPDATED handlePayFee Function ---
+    // --- UPDATED handlePayFee Function (logic same, check env variables) ---
     const handlePayFee = async () => {
         console.log("Attempting to pay fee...");
-        setIsLoading(true); // Start loading indicator
+        setIsLoading(true);
 
-        // 1. Load the Razorpay script
         const scriptLoaded = await loadRazorpayScript(RAZORPAY_SCRIPT_URL);
         if (!scriptLoaded) {
             alert('Failed to load payment gateway. Please check your connection and try again.');
@@ -136,74 +117,60 @@ const FeePayment = () => {
             return;
         }
 
-        // 2. Call backend to create an order
         try {
-            const backendUrl = 'http://localhost:8000/api/payment/create-order'; // Your backend endpoint
-            const orderPayload = {
-                amount: payableAmount, // Send amount in base currency unit (e.g., INR)
-                currency: 'INR',
-            };
+            const backendUrl = 'http://localhost:8000/api/payment/create-order';
+            const orderPayload = { amount: payableAmount, currency: 'INR' };
 
             console.log("Sending to backend:", orderPayload);
             const { data } = await axios.post(backendUrl, orderPayload);
             console.log("Received order data from backend:", data);
 
-            const { orderId, currency, amount: amountInPaise } = data; // Destructure response
+            const { orderId, currency, amount: amountInPaise } = data;
 
-            console.log("Using Razorpay Key ID for Frontend:", process.env.REACT_APP_RAZORPAY_KEY_ID); // <-- ADD THIS
+            // Check if the key is loaded correctly (keep this debug line)
+            console.log("Using Razorpay Key ID for Frontend:", process.env.REACT_APP_RAZORPAY_KEY_ID);
 
-            // 3. Configure Razorpay Checkout Options
             const options = {
-                key: process.env.REACT_APP_RAZORPAY_KEY_ID || "rzp_test_YOUR_KEY_ID", // Use environment variable for Key ID (IMPORTANT!)
-                amount: amountInPaise, // Amount from backend (in paise)
+                key: process.env.REACT_APP_RAZORPAY_KEY_ID, // Ensure this is set in your .env
+                amount: amountInPaise,
                 currency: currency,
-                name: "IIT Guwahati", // Display name
+                name: "IIT Guwahati",
                 description: `Fee Payment - Sem ${student.currentSemester}`,
-                image: "/logo-url.png", // Optional: Your logo URL
-                order_id: orderId, // Crucial: Order ID from backend
+                image: "/iitg_logo_blue.png", // Update with your actual logo URL if available
+                order_id: orderId,
                 handler: function (response) {
-                    // --- This function executes on successful payment ---
                     console.log("Razorpay Success Response:", response);
                     alert("Payment Successful!");
-
-                    // Update frontend state to reflect payment
                     setIsPaid(true);
                     setPaymentDetails({
-                        slNo: paymentDetails?.slNo ? paymentDetails.slNo + 1 : 1, // Increment Sl No. or start at 1
+                        slNo: paymentDetails?.slNo ? paymentDetails.slNo + 1 : 1,
                         feeType: feeSummary.feeType,
-                        feeAmount: payableAmount, // Amount paid
-                        transactionId: response.razorpay_payment_id, // Payment ID from Razorpay
-                        razorpayOrderId: response.razorpay_order_id, // Order ID from Razorpay
-                        razorpaySignature: response.razorpay_signature, // Signature
-                        dateTime: new Date().toLocaleString("sv-SE"), // Timestamp
+                        feeAmount: payableAmount,
+                        transactionId: response.razorpay_payment_id,
+                        razorpayOrderId: response.razorpay_order_id,
+                        razorpaySignature: response.razorpay_signature,
+                        dateTime: new Date().toLocaleString("sv-SE"),
                         status: "Success",
                     });
-
-                    // IMPORTANT FOR PRODUCTION:
-                    // You should now ideally call your backend's '/api/payment/verify' endpoint
-                    // with the response data (razorpay_payment_id, razorpay_order_id, razorpay_signature)
-                    // to securely verify the payment signature on the server before fully trusting the transaction.
-                    // For this test setup, we are directly updating the UI based on this handler.
-
-                    setIsLoading(false); // Stop loading indicator AFTER processing response
+                    setIsLoading(false);
+                    // TODO: Call backend verification endpoint here in production
                 },
                 prefill: {
                     name: student.name,
-                    email: student.email || "", // Optional prefill
-                    contact: student.contact || "" // Optional prefill
+                    email: student.email || "", // Use email from student data
+                    contact: student.contact || "" // Use contact from student data
                 },
                 notes: {
-                    address: "Your Institution Address", // Optional notes
+                    address: "IIT Guwahati, Assam, India", // Example address
                     roll_number: student.rollNumber,
                     semester: student.currentSemester,
                 },
                 theme: {
-                    color: "#3399cc" // Optional theme color
+                    color: "#007bff" // Example theme color (similar to blue button)
                 },
                 modal: {
                     ondismiss: function () {
                         console.log('Razorpay checkout modal dismissed.');
-                        // Only stop loading if the payment wasn't successful yet
                         if (!isPaid) {
                             setIsLoading(false);
                         }
@@ -211,15 +178,11 @@ const FeePayment = () => {
                 }
             };
 
-            // 4. Create Razorpay instance and open Checkout
-            // Ensure window.Razorpay is available
             if (window.Razorpay) {
                 const rzp = new window.Razorpay(options);
-                // Add error handling for the checkout instance itself
                 rzp.on('payment.failed', function (response) {
                     console.error("Razorpay Payment Failed Event:", response.error);
                     alert(`Payment Failed: ${response.error.description || response.error.reason || 'Unknown error'}`);
-                    // Make sure loading stops on explicit failure event
                     setIsLoading(false);
                 });
                 rzp.open();
@@ -227,7 +190,6 @@ const FeePayment = () => {
                 alert('Payment gateway failed to initialize.');
                 setIsLoading(false);
             }
-
 
         } catch (error) {
             console.error("Payment failed:", error);
@@ -238,68 +200,47 @@ const FeePayment = () => {
                 errorMessage = `Payment failed: ${error.message}`;
             }
             alert(errorMessage);
-            setIsLoading(false); // Stop loading indicator on error
+            setIsLoading(false);
         }
     };
 
-    // Handle downloading the receipt PDF
-    // This replicates the core logic from FeeReceiptPage.jsx's handlers
+    // --- handleDownloadReceipt (logic same) ---
     const handleDownloadReceipt = async () => {
-        // Ensure payment was successful and we have details
-        // Also prevent multiple clicks while processing
-        if (!isPaid || !paymentDetails || isDownloading) {
-            console.log("Download conditions not met or already downloading.");
-            return;
-        }
-
-        setIsDownloading(true); // Show loading state on the download button
+        if (!isPaid || !paymentDetails || isDownloading) return;
+        setIsDownloading(true);
         console.log("Generating PDF receipt...");
-
         try {
-            // 1. Generate PDF Blob using the imported FeeReceiptPDF component
-            //    Pass data currently available in *this* component's state.
             const blob = await pdf(
                 <FeeReceiptPDF
-                    student={student} // Pass the student data object
-                    semester={student.currentSemester} // Pass the relevant semester
-                    feeData={feeDataForPDF} // Pass the prepared fee data array (particulars + summaries)
-                    isPaid={isPaid} // Pass the payment status (should be true here)
-                    transactionDetails={paymentDetails} // Pass the actual transaction details
+                    student={student}
+                    semester={student.currentSemester}
+                    feeData={feeDataForPDF}
+                    isPaid={isPaid}
+                    transactionDetails={paymentDetails}
                 />
             ).toBlob();
-
-            // 2. Create a URL for the Blob
             const url = URL.createObjectURL(blob);
-
-            // 3. Create a temporary link element to trigger the download
             const link = document.createElement("a");
             link.href = url;
-            link.download = `Fee_Receipt_${student.rollNumber}_Sem${student.currentSemester}.pdf`; // Create a dynamic filename
-
-            // 4. Append link, click it, and remove it
+            link.download = `Fee_Receipt_${student.rollNumber}_Sem${student.currentSemester}.pdf`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            // 5. Revoke the Blob URL to free up memory
             URL.revokeObjectURL(url);
-
             console.log("Receipt download initiated.");
-
         } catch (error) {
             console.error("Error generating or downloading PDF receipt:", error);
             alert("Failed to generate PDF receipt. An error occurred.");
         } finally {
-            setIsDownloading(false); // Reset the download button loading state
+            setIsDownloading(false);
         }
     };
 
-    // --- Helper Function ---
+    // --- Helper Function (remains the same) ---
     const formatCurrency = (amount) => {
         const numericAmount = Number(amount);
-        // Handle cases where amount might be null, undefined, or non-numeric
         if (isNaN(numericAmount)) {
-            return '₹ --.--'; // Or return 'N/A' or formatCurrency(0)
+            return '₹ --.--';
         }
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -310,77 +251,112 @@ const FeePayment = () => {
     };
 
     // --- Render Logic ---
-    if (isLoading && !paymentDetails && !isPaid) { // Show full page loading only initially
+    if (isLoading && !paymentDetails && !isPaid) {
         return (
-            <div className={`${styles.feePaymentContainer} ${styles.loadingState}`}>
-                <p>Loading Fee Details...</p> {/* Add a spinner component here if desired */}
+            // Apply container styles directly + loading specific styles
+            <div className="max-w-[1000px] mx-auto my-10 px-10 py-[35px] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-gray-800 text-center p-12 text-lg text-gray-600">
+                <p>Loading Fee Details...</p>
+                {/* You can add a Tailwind spinner here if needed */}
+                {/* e.g., <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-4"></div> */}
             </div>
         );
     }
 
-    return (
-        <div className={styles.feePaymentContainer}>
-            <h1 className={styles.pageTitle}>Academic Fee Payment</h1>
+    // Base classes for table cells (td/th)
+    const cellBaseClasses = "px-[18px] py-[14px] text-left border-b border-gray-100 text-sm align-middle";
+    // Base classes for table header cells (th)
+    const thBaseClasses = `${cellBaseClasses} font-semibold uppercase tracking-wider`;
+    // Base classes for action buttons
+    const buttonBaseClasses = "px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-250 ease text-center shadow-md tracking-tight hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed";
 
-            {/* --- Student Identification --- */}
-            <section className={styles.studentInfoSection}>
+
+    return (
+        // Container
+        <div className="max-w-[1000px] mx-auto my-10 px-10 py-[35px] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-gray-800 transition-all duration-300 ease-out">
+            {/* Page Title */}
+            <h1 className="text-center text-gray-900 mb-[35px] text-3xl font-semibold pb-4 border-b-2 border-blue-500 tracking-wide">
+                Academic Fee Payment
+            </h1>
+
+            {/* Student Identification Section */}
+            <section className="flex items-center bg-gray-50 px-[25px] py-5 rounded-xl mb-[35px] border border-gray-200 shadow-md">
                 <img
                     src={student.photo}
                     alt={`${student.name}'s profile`}
-                    className={styles.profilePhoto}
-                    // Add a fallback image source in case the primary one fails
+                    // Use arbitrary width/height and specific border
+                    className="w-[75px] h-[75px] rounded-full object-cover mr-6 border-[3px] border-white shadow-lg"
                     onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
                 />
-                <div className={styles.studentDetails}>
-                    <h2>{student.name}</h2>
-                    <p><strong>Roll No:</strong> <span>{student.rollNumber}</span></p>
-                    <p><strong>Programme:</strong> <span>{student.programme} - {student.branch}</span></p>
-                    <p><strong>Semester:</strong> <span>{student.currentSemester}</span></p>
+                {/* Student Details Div */}
+                <div>
+                    <h2 className="mb-2.5 text-xl text-gray-900 font-semibold">{student.name}</h2>
+                    <p className="my-1 text-base text-gray-700">
+                        <strong className="text-gray-800 mr-2.5 min-w-[100px] inline-block font-medium">Roll No:</strong>
+                        <span>{student.rollNumber}</span>
+                    </p>
+                    <p className="my-1 text-base text-gray-700">
+                        <strong className="text-gray-800 mr-2.5 min-w-[100px] inline-block font-medium">Programme:</strong>
+                        <span>{student.programme} - {student.branch}</span>
+                    </p>
+                    <p className="my-1 text-base text-gray-700">
+                        <strong className="text-gray-800 mr-2.5 min-w-[100px] inline-block font-medium">Semester:</strong>
+                        <span>{student.currentSemester}</span>
+                    </p>
                 </div>
             </section>
 
-            {/* --- Fee Overview Section --- */}
-            <section className={styles.feeSection}>
-                <div className={styles.tableWrapper}>
-                    <table className={`${styles.dataTable} ${styles.overviewTable}`}>
+            {/* Fee Overview Section */}
+            <section className="mb-[35px] border border-gray-300 rounded-xl overflow-hidden bg-white shadow-lg transition-shadow duration-300 ease hover:shadow-xl">
+                {/* No separate Section Title for overview */}
+                <div className="overflow-x-auto p-1">
+                    <table className="w-full border-collapse">
                         <thead>
                             <tr>
-                                <th>Semester</th>
-                                <th>Fee Type</th>
-                                <th className={styles.amountCell}>Total Fee</th>
-                                <th className={styles.amountCell}>Fee Paid</th>
-                                <th className={styles.amountCell}>Amount Due</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                {/* Apply specific header bg/text color */}
+                                <th className={`${thBaseClasses} bg-blue-100 text-blue-800`}>Semester</th>
+                                <th className={`${thBaseClasses} bg-blue-100 text-blue-800`}>Fee Type</th>
+                                <th className={`${thBaseClasses} bg-blue-100 text-blue-800 text-right font-medium tracking-tight`}>Total Fee</th>
+                                <th className={`${thBaseClasses} bg-blue-100 text-blue-800 text-right font-medium tracking-tight`}>Fee Paid</th>
+                                <th className={`${thBaseClasses} bg-blue-100 text-blue-800 text-right font-medium tracking-tight`}>Amount Due</th>
+                                <th className={`${thBaseClasses} bg-blue-100 text-blue-800`}>Status</th>
+                                <th className={`${thBaseClasses} bg-blue-100 text-blue-800`}>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>{feeSummary.semester}</td>
-                                <td>{feeSummary.feeType}</td>
-                                <td className={styles.amountCell}>{formatCurrency(feeSummary.totalFee)}</td>
-                                <td className={styles.amountCell}>{formatCurrency(feeSummary.feePaid)}</td>
-                                <td className={`${styles.amountCell} ${!isPaid ? styles.amountDue : ''}`}>
+                            {/* Add hover and even row background styles to TR */}
+                            <tr className="transition-colors duration-250 ease even:bg-gray-50 hover:bg-blue-50">
+                                <td className={cellBaseClasses}>{feeSummary.semester}</td>
+                                <td className={cellBaseClasses}>{feeSummary.feeType}</td>
+                                <td className={`${cellBaseClasses} text-right font-medium tracking-tight`}>{formatCurrency(feeSummary.totalFee)}</td>
+                                <td className={`${cellBaseClasses} text-right font-medium tracking-tight`}>{formatCurrency(feeSummary.feePaid)}</td>
+                                {/* Conditional styling for Amount Due */}
+                                <td className={`${cellBaseClasses} text-right font-medium tracking-tight ${!isPaid ? 'text-red-700 font-bold' : ''}`}>
                                     {formatCurrency(feeSummary.feeToBePaid)}
                                 </td>
-                                <td>
-                                    {/* Status Badge */}
-                                    <span className={`${styles.statusBadge} ${isPaid ? styles.statusPaid : styles.statusDue}`}>
+                                <td className={`${cellBaseClasses} text-center`}>
+                                    {/* Conditional Status Badge */}
+                                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${
+                                        isPaid
+                                            ? 'text-green-800 bg-green-100 border-green-200' // Paid styles
+                                            : 'text-red-800 bg-red-100 border-red-200 font-bold' // Due styles
+                                    }`}>
                                         {feeSummary.remarks}
                                     </span>
                                 </td>
-                                <td>
-                                    {/* Action Button: Pay or Confirmation Text */}
+                                <td className={`${cellBaseClasses} text-center`}>
+                                    {/* Conditional Action: Button or Text */}
                                     {!isPaid ? (
                                         <button
                                             onClick={handlePayFee}
-                                            className={`${styles.actionButton} ${styles.payButton}`}
-                                            disabled={isLoading} // Disable button during payment processing
+                                            // Combine base button styles with specific colors
+                                            className={`${buttonBaseClasses} bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800`}
+                                            disabled={isLoading}
                                         >
                                             {isLoading ? 'Processing...' : 'Proceed to Pay'}
                                         </button>
                                     ) : (
-                                        <span className={styles.statusTextPaid}>✓ Payment Complete</span>
+                                        // Paid confirmation text
+                                        <span className="text-green-700 font-bold">✓ Payment Complete</span>
                                     )}
                                 </td>
                             </tr>
@@ -390,83 +366,89 @@ const FeePayment = () => {
             </section>
 
 
-            {/* --- Detailed Fee Breakdown Section --- */}
-            <section className={styles.feeSection}>
-                <h2 className={styles.sectionTitle}>Fee Breakdown</h2>
-                <div className={styles.tableWrapper}>
-                    <table className={`${styles.dataTable} ${styles.breakdownTable}`}>
+            {/* Detailed Fee Breakdown Section */}
+            <section className="mb-[35px] border border-gray-300 rounded-xl overflow-hidden bg-white shadow-lg transition-shadow duration-300 ease hover:shadow-xl">
+                <h2 className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-[15px] text-lg font-semibold text-gray-800 border-b border-gray-300">
+                    Fee Breakdown
+                </h2>
+                <div className="overflow-x-auto p-1">
+                    {/* Use default header bg/text color */}
+                    <table className="w-full border-collapse">
                         <thead>
                             <tr>
-                                <th>Particulars</th>
-                                <th className={styles.textRight}>Amount (INR)</th>
+                                <th className={`${thBaseClasses} bg-gray-50 text-gray-700`}>Particulars</th>
+                                <th className={`${thBaseClasses} bg-gray-50 text-gray-700 text-right`}>Amount (INR)</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {/* Map through particulars only */}
                             {feeParticularsData.map((item, index) => (
-                                <tr key={`particular-${index}`}>
-                                    <td>{item.particular}</td>
-                                    <td className={styles.amountCell}>{formatCurrency(item.amount)}</td>
+                                <tr key={`particular-${index}`} className="transition-colors duration-250 ease even:bg-gray-50 hover:bg-blue-50">
+                                    <td className={cellBaseClasses}>{item.particular}</td>
+                                    {/* Amount cell */}
+                                    <td className={`${cellBaseClasses} text-right font-medium tracking-tight`}>{formatCurrency(item.amount)}</td>
                                 </tr>
                             ))}
-                            {/* Manually add summary rows for specific styling */}
-                            <tr className={styles.totalRow}>
-                                <td><strong>Total Amount</strong></td>
-                                <td className={styles.amountCell}><strong>{formatCurrency(feeSummary.totalFee)}</strong></td>
+                            {/* Summary Rows with specific styles */}
+                            <tr className="transition-colors duration-250 ease even:bg-gray-50 hover:bg-blue-50 font-semibold bg-gray-100 text-gray-900">
+                                <td className={cellBaseClasses}><strong>Total Amount</strong></td>
+                                <td className={`${cellBaseClasses} text-right font-medium tracking-tight text-red-600 text-base`}><strong>{formatCurrency(feeSummary.totalFee)}</strong></td>
                             </tr>
-                            <tr>
-                                <td>Adjustment Amount</td>
-                                <td className={styles.amountCell}>{formatCurrency(adjustmentAmount)}</td>
+                            <tr className="transition-colors duration-250 ease even:bg-gray-50 hover:bg-blue-50">
+                                <td className={cellBaseClasses}>Adjustment Amount</td>
+                                <td className={`${cellBaseClasses} text-right font-medium tracking-tight`}>{formatCurrency(adjustmentAmount)}</td>
                             </tr>
-                            <tr className={styles.payableRow}>
-                                <td><strong>Net Payable Amount</strong></td>
-                                <td className={styles.amountCell}><strong>{formatCurrency(feeSummary.payableAmount)}</strong></td>
+                            <tr className="transition-colors duration-250 ease even:bg-gray-50 hover:bg-blue-50 font-semibold bg-gray-100 text-gray-900">
+                                <td className={cellBaseClasses}><strong>Net Payable Amount</strong></td>
+                                <td className={`${cellBaseClasses} text-right font-medium tracking-tight text-red-600 text-base`}><strong>{formatCurrency(feeSummary.payableAmount)}</strong></td>
                             </tr>
-                            <tr className={styles.remarksRow}>
-                                <td>Remarks</td>
-                                {/* Display detailed remarks if available, otherwise '--' */}
-                                <td className={styles.amountCell}>{feeSummary.detailedRemarks || '--'}</td>
+                            <tr className="transition-colors duration-250 ease even:bg-gray-50 hover:bg-blue-50 italic text-gray-600 bg-gray-50">
+                                <td className={cellBaseClasses}>Remarks</td>
+                                <td className={`${cellBaseClasses} text-right`}>{feeSummary.detailedRemarks || '--'}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            {/* --- Payment History/Confirmation Section (Show only if paid) --- */}
+            {/* Payment History/Confirmation Section */}
             {isPaid && paymentDetails && (
-                <section className={`${styles.feeSection} ${styles.paymentHistorySection}`}>
-                    <h2 className={styles.sectionTitle}>Payment Confirmation</h2>
-                    <div className={styles.tableWrapper}>
-                        <table className={`${styles.dataTable} ${styles.historyTable}`}>
+                <section className="mb-[35px] border border-gray-300 rounded-xl overflow-hidden bg-white shadow-lg transition-shadow duration-300 ease hover:shadow-xl">
+                    <h2 className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-[15px] text-lg font-semibold text-gray-800 border-b border-gray-300">
+                        Payment Confirmation
+                    </h2>
+                    <div className="overflow-x-auto p-1">
+                        <table className="w-full border-collapse">
                             <thead>
                                 <tr>
-                                    <th>Sl. No.</th>
-                                    <th>Fee Type</th>
-                                    <th className={styles.amountCell}>Amount Paid</th>
-                                    <th>Transaction ID</th>
-                                    <th>Date & Time</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
+                                    {/* Specific header colors for history */}
+                                    <th className={`${thBaseClasses} bg-green-100 text-green-800`}>Sl. No.</th>
+                                    <th className={`${thBaseClasses} bg-green-100 text-green-800`}>Fee Type</th>
+                                    <th className={`${thBaseClasses} bg-green-100 text-green-800 text-right font-medium tracking-tight`}>Amount Paid</th>
+                                    <th className={`${thBaseClasses} bg-green-100 text-green-800`}>Transaction ID</th>
+                                    <th className={`${thBaseClasses} bg-green-100 text-green-800`}>Date & Time</th>
+                                    <th className={`${thBaseClasses} bg-green-100 text-green-800`}>Status</th>
+                                    <th className={`${thBaseClasses} bg-green-100 text-green-800`}>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>{paymentDetails.slNo}</td>
-                                    <td>{paymentDetails.feeType}</td>
-                                    <td className={styles.amountCell}>{formatCurrency(paymentDetails.feeAmount)}</td>
-                                    <td>{paymentDetails.transactionId}</td>
-                                    <td>{paymentDetails.dateTime}</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles.statusSuccess}`}>
+                                <tr className="transition-colors duration-250 ease even:bg-gray-50 hover:bg-blue-50">
+                                    <td className={cellBaseClasses}>{paymentDetails.slNo}</td>
+                                    <td className={cellBaseClasses}>{paymentDetails.feeType}</td>
+                                    <td className={`${cellBaseClasses} text-right font-medium tracking-tight`}>{formatCurrency(paymentDetails.feeAmount)}</td>
+                                    <td className={cellBaseClasses}>{paymentDetails.transactionId}</td>
+                                    <td className={cellBaseClasses}>{paymentDetails.dateTime}</td>
+                                    <td className={`${cellBaseClasses} text-center`}>
+                                        {/* Success Status Badge */}
+                                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border text-green-800 bg-green-100 border-green-200">
                                             {paymentDetails.status}
                                         </span>
                                     </td>
-                                    <td>
-                                        {/* Download Button with Loading State */}
+                                    <td className={`${cellBaseClasses} text-center`}>
                                         <button
                                             onClick={handleDownloadReceipt}
-                                            className={`${styles.actionButton} ${styles.receiptButton}`}
-                                            disabled={isDownloading} // Disable while generating/downloading
+                                            // Base button styles + specific colors
+                                            className={`${buttonBaseClasses} bg-gradient-to-r from-green-500 to-green-700 text-white hover:from-green-600 hover:to-green-800`}
+                                            disabled={isDownloading}
                                         >
                                             {isDownloading ? 'Generating...' : 'Download Receipt'}
                                         </button>
