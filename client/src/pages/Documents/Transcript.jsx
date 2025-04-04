@@ -3,7 +3,7 @@ import DocumentLayout from "../../components/documentSection/DocumentLayout";
 import PDFPreview from "../../components/documentSection/PDFPreview";
 import TranscriptPDF from "../../components/documentSection/TranscriptPDF";
 import { pdf } from "@react-pdf/renderer";
-import { FaUser, FaIdBadge, FaGraduationCap, FaBook, FaCalendarAlt, FaChartLine, FaTint, FaPhone } from "react-icons/fa";
+import { FaUser, FaIdBadge, FaGraduationCap, FaBook, FaChartLine } from "react-icons/fa";
 
 const TranscriptPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +19,7 @@ const TranscriptPage = () => {
     currentSemester: "4th",
     cgpa: "8.75",
     contact: "+91 9876543210",
-    photo: "https://example.com/student-photo.jpg", // Replace with actual URL
+    photo: "https://example.com/student-photo.jpg",
     courses: [
       { code: "CS101", name: "Data Structures", credit: "4", year: "2022", session: "Spring", grade: "A" },
       { code: "CS102", name: "Algorithms", credit: "4", year: "2022", session: "Fall", grade: "A-" },
@@ -73,19 +73,24 @@ const TranscriptPage = () => {
 
   return (
     <DocumentLayout title="Transcript">
-      <div className="max-w-3xl mx-auto space-y-6 p-6 bg-gradient-to-b from-blue-50 to-gray-100 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-center text-blue-900 mb-6">Student Information</h1>
+      <div className="max-w-3xl mx-auto space-y-6 p-6 bg-white rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Student Information</h1>
 
-        <div className="bg-white shadow-md rounded-lg border border-gray-300 p-6">
-          <div className="divide-y divide-gray-300">
+        {/* Student Information Section */}
+        <div className="bg-white shadow-lg rounded-xl border border-gray-200 p-6 md:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
             {studentInfo.map((item, index) => (
-              <div 
-                key={index} 
-                className={`flex items-center gap-3 px-4 py-3 ${index % 2 === 0 ? "bg-blue-100" : "bg-white"} rounded-md transition-transform transform hover:scale-[1.02] duration-300`}
+              <div
+                key={index}
+                className="flex items-center gap-4 p-3 border-b border-gray-200 md:border-none md:p-0 transition-colors duration-200 hover:bg-gray-50 rounded-md md:hover:bg-transparent"
               >
-                <span className="text-indigo-700 text-lg">{item.icon}</span>
-                <p className="text-gray-800 font-medium">{item.label}:</p>
-                <p className="text-gray-900 font-semibold">{item.value}</p>
+                <span className="text-blue-700 text-xl bg-blue-100 p-2 rounded-full">
+                  {item.icon}
+                </span>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{item.label}</p>
+                  <p className="text-gray-900 font-semibold text-base">{item.value}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -97,10 +102,10 @@ const TranscriptPage = () => {
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className={`relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 shadow-lg transform hover:scale-105 ${
+            className={`relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 shadow-md transform hover:scale-105 ${
               isLoading
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-600"
+                : "bg-blue-700 hover:bg-blue-600"
             }`}
           >
             {isLoading ? "Generating..." : "Generate Transcript"}
@@ -110,7 +115,7 @@ const TranscriptPage = () => {
             <a
               href={pdfUrl}
               download
-              className="relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 bg-gradient-to-r from-green-600 to-teal-700 hover:from-teal-500 hover:to-green-600 shadow-lg transform hover:scale-105"
+              className="relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 bg-blue-700 hover:bg-blue-600 shadow-md transform hover:scale-105"
             >
               Download PDF
             </a>
