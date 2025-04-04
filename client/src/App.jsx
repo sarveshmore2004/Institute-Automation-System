@@ -36,6 +36,7 @@ import DocumentAccessControl from "./pages/Documents/admin/DocumentAccessControl
 
 import { RoleProvider } from "./context/Rolecontext.jsx";
 import StudentProfile from "./pages/ProfilePage.jsx";
+import FeePayment from "./pages/FeePayment.jsx";
 
 const queryClient = new QueryClient();
 function App() {
@@ -167,6 +168,10 @@ function App() {
         {
           path: "/courseFeedback/selectedCourse",
           element: <CourseFeedbackFormPage />,
+        },
+        {
+          path: "/feepayment",
+          element: <FeePayment />,
         },
         {
           path: "/profile",
