@@ -1,127 +1,172 @@
-import React from "react";
-import { Page, Text, View, Document, StyleSheet, Image } from "@react-pdf/renderer";
-import iitglogo from '../../assets/iitglogo.jpg';
+import React, { useState } from "react";
+import DocumentLayout from "../../components/documentSection/DocumentLayout";
+import PDFPreview from "../../components/documentSection/PDFPreview";
+import TranscriptPDF from "../../components/documentSection/TranscriptPDF";
+import { pdf } from "@react-pdf/renderer";
+import { FaUser, FaIdBadge, FaGraduationCap, FaBook, FaExclamationCircle } from "react-icons/fa";
+import { useQuery } from 'react-query';
+import newRequest from '../../utils/newRequest'; // Assuming you're using this to make API calls
 
-// Define styles
-const styles = StyleSheet.create({
-    page: { padding: 20, fontSize: 12, backgroundColor: "#ffffff" },
-    headerContainer: { textAlign: "center", marginBottom: 15 },
-    headerText: { fontSize: 16, fontWeight: "bold", color: "#1a237e" },
-    subHeader: { fontSize: 12, fontWeight: "bold", marginBottom: 10, color: "#333" },
-    contentContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-    logo: { width: 60, height: 60, marginBottom: 5, alignSelf: "center" },
-    studentInfoContainer: { flex: 2, marginRight: 10, border: "1 solid #333", borderRadius: 5, padding: 8 },
-    row: { flexDirection: "row", borderBottom: "1 solid #ccc", padding: 4 },
-    cellLabel: { flex: 1, fontWeight: "bold", color: "#1a237e" },
-    cellValue: { flex: 2, color: "#333" },
-    studentImageContainer: { flexDirection: "column", alignItems: "center" },
-    studentImage: { width: 100, height: 120, border: "1 solid #333", borderRadius: 5, marginBottom: 5 },
-    qrCode: { width: 60, height: 60, border: "1 solid #333" },
-    tableContainer: { marginTop: 10, border: "1 solid #333", borderRadius: 5, overflow: "hidden" },
-    tableHeader: { flexDirection: "row", backgroundColor: "#1a237e", color: "#fff", padding: 6 },
-    tableRow: { flexDirection: "row", borderBottom: "1 solid #ccc", padding: 6 },
-    tableCell: { flex: 1, textAlign: "center" }
-});
+const TranscriptPage = () => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [pdfBlob, setPdfBlob] = useState(null);
 
-// Student Transcript PDF Component
-const TranscriptPDF = ({ student }) => {
-    if (!student) {
-        return (
-            <Document>
-                <Page style={styles.page}>
-                    <Text style={{ textAlign: "center", color: "red", fontSize: 16 }}>
-                        Error: No student data available.
-                    </Text>
-                </Page>
-            </Document>
-        );
+  // Get user data from localStorage
+  const { data: userData } = JSON.parse(localStorage.getItem("currentUser"));
+  const { userId } = userData.user;
+
+  // Fetch student data
+  const { isLoading, error, data: studentData } = useQuery({
+    queryKey: [`student-${userId}`],
+    queryFn: () =>
+      newRequest.get(`/student/${userId}`).then((res) => res.data),
+  });
+
+  // Fetch student grades and courses data using the correct route
+  const { data: gradesData, isLoading: gradesLoading, error: gradesError } = useQuery({
+    queryKey: [`grades-${userId}`],
+    queryFn: () =>
+      newRequest.get(`/student/${userId}/grades`).then((res) => res.data), // Correct API call
+  });
+
+  // Show loading or error states
+  if (isLoading || gradesLoading) {
+    return (
+      <DocumentLayout title="Transcript">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading student information...</p>
+          </div>
+        </div>
+      </DocumentLayout>
+    );
+  }
+
+  if (error || gradesError) {
+    return (
+      <DocumentLayout title="Transcript">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <FaExclamationCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                Error loading student information. Please try again later.
+              </p>
+            </div>
+          </div>
+        </div>
+      </DocumentLayout>
+    );
+  }
+
+  const fullStudent = {
+    name: studentData?.name || "N/A",
+    rollNo: studentData?.rollNo || "N/A",
+    programme: studentData?.program || "N/A",
+    branch: studentData?.department || "N/A",
+    semester: studentData?.semester || "N/A",
+    photo: studentData?.photo || "https://example.com/student-photo.jpg", // Assuming photo exists in studentData
+  };
+
+  const studentInfo = [
+    { label: "Name", value: fullStudent.name, icon: <FaUser /> },
+    { label: "Roll No", value: fullStudent.rollNo, icon: <FaIdBadge /> },
+    { label: "Programme", value: fullStudent.programme, icon: <FaGraduationCap /> },
+    { label: "Department", value: fullStudent.branch, icon: <FaBook /> },
+    { label: "Current Semester", value: fullStudent.semester, icon: <FaGraduationCap /> }
+  ];
+
+  const handleGenerate = async () => {
+    if (!studentData || !gradesData) {
+      console.error("Error: Missing student data or grades data");
+      return;
     }
 
-    return (
-        <Document>
-            <Page style={styles.page}>
-                {/* Header */}
-                <View style={styles.headerContainer}>
-                    <Image src={iitglogo} style={styles.logo} />
-                    <Text style={styles.headerText}>Indian Institute of Technology Guwahati</Text>
-                    <Text style={styles.subHeader}>OFFICIAL TRANSCRIPT</Text>
-                </View>
+    setIsGenerating(true);
 
-                {/* Student Information and Photo */}
-                <View style={styles.contentContainer}>
-                    <View style={styles.studentInfoContainer}>
-                        {[
-                            { label: "NAME", value: student.name || "N/A" },
-                            { label: "ROLL NO", value: student.rollNo || "N/A" },
-                            { label: "BRANCH", value: student.branch || "N/A" },
-                            { label: "PROGRAMME", value: student.programme || "N/A" },
-                        ].map((item, index) => (
-                            <View key={index} style={styles.row}>
-                                <Text style={styles.cellLabel}>{item.label}</Text>
-                                <Text style={styles.cellValue}>{item.value}</Text>
-                            </View>
-                        ))}
-                    </View>
+    try {
+      const blob = await pdf(
+        <TranscriptPDF
+          student={studentData}
+          courses={gradesData.courses} // Pass courses data
+          spiCpi={gradesData.spiCpi} // Pass SPI and CPI data
+        />
+      ).toBlob();
 
-                    <View style={styles.studentImageContainer}>
-                        {student.photo ? (
-                            <Image src={student.photo} style={styles.studentImage} />
-                        ) : (
-                            <Text>No Photo</Text>
-                        )}
-                        {student.rollNo ? (
-                            <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${student.rollNo}`} style={styles.qrCode} />
-                        ) : (
-                            <Text>No QR Code</Text>
-                        )}
-                    </View>
-                </View>
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+      setPdfBlob(blob);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-                {/* Course List Table */}
-                <View style={styles.tableContainer}>
-                    <View style={styles.tableHeader}>
-                        {['Course Code', 'Course Name', 'Credit/Audit', 'Year', 'Session', 'Grade'].map((header, index) => (
-                            <Text key={index} style={styles.tableCell}>{header}</Text>
-                        ))}
-                    </View>
-                    {student.courses && student.courses.length > 0 ? (
-                        student.courses.map((course, index) => (
-                            <View key={index} style={styles.tableRow}>
-                                <Text style={styles.tableCell}>{course.code || "N/A"}</Text>
-                                <Text style={styles.tableCell}>{course.name || "N/A"}</Text>
-                                <Text style={styles.tableCell}>{course.credit || "N/A"}</Text>
-                                <Text style={styles.tableCell}>{course.year || "N/A"}</Text>
-                                <Text style={styles.tableCell}>{course.session || "N/A"}</Text>
-                                <Text style={styles.tableCell}>{course.grade || "N/A"}</Text>
-                            </View>
-                        ))
-                    ) : (
-                        <Text style={{ textAlign: "center", padding: 10 }}>No Courses Available</Text>
-                    )}
-                </View>
+  const handleDownload = () => {
+    if (pdfBlob) {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(pdfBlob);
+      link.download = "Student_Transcript.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
-                {/* SPI & CPI Table */}
-                <View style={styles.tableContainer}>
-                    <View style={styles.tableHeader}>
-                        {['Semester', 'SPI', 'CPI'].map((header, index) => (
-                            <Text key={index} style={styles.tableCell}>{header}</Text>
-                        ))}
-                    </View>
-                    {student.spiCpi && student.spiCpi.length > 0 ? (
-                        student.spiCpi.map((entry, index) => (
-                            <View key={index} style={styles.tableRow}>
-                                <Text style={styles.tableCell}>{entry.semester || "N/A"}</Text>
-                                <Text style={styles.tableCell}>{entry.spi || "N/A"}</Text>
-                                <Text style={styles.tableCell}>{entry.cpi || "N/A"}</Text>
-                            </View>
-                        ))
-                    ) : (
-                        <Text style={{ textAlign: "center", padding: 10 }}>No SPI/CPI Data Available</Text>
-                    )}
-                </View>
-            </Page>
-        </Document>
-    );
+  return (
+    <DocumentLayout title="Transcript">
+      <div className="max-w-3xl mx-auto space-y-6 p-6 bg-white rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Student Information</h1>
+
+        {/* Student Information Section */}
+        <div className="bg-white shadow-lg rounded-xl border border-gray-200 p-6 md:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+            {studentInfo.map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-4 p-3 border-b border-gray-200 md:border-none md:p-0 transition-colors duration-200 hover:bg-gray-50 rounded-md md:hover:bg-transparent"
+              >
+                <span className="text-blue-700 text-xl bg-blue-100 p-2 rounded-full">
+                  {item.icon}
+                </span>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{item.label}</p>
+                  <p className="text-gray-900 font-semibold text-base">{item.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <PDFPreview pdfUrl={pdfUrl} isLoading={isGenerating} />
+
+        <div className="flex justify-center gap-4 pt-4">
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className={`relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 shadow-md transform hover:scale-105 ${
+              isGenerating ? "bg-gray-400 cursor-not-allowed" : "bg-blue-700 hover:bg-blue-600"
+            }`}
+          >
+            {isGenerating ? "Generating..." : "Generate Transcript"}
+          </button>
+
+          {pdfUrl && (
+            <a
+              href={pdfUrl}
+              download
+              className="relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 bg-blue-700 hover:bg-blue-600 shadow-md transform hover:scale-105"
+            >
+              Download PDF
+            </a>
+          )}
+        </div>
+      </div>
+    </DocumentLayout>
+  );
 };
 
-export default TranscriptPDF;
+export default TranscriptPage;

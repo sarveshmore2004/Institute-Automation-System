@@ -3,60 +3,105 @@ import DocumentLayout from "../../components/documentSection/DocumentLayout";
 import PDFPreview from "../../components/documentSection/PDFPreview";
 import TranscriptPDF from "../../components/documentSection/TranscriptPDF";
 import { pdf } from "@react-pdf/renderer";
-import { FaUser, FaIdBadge, FaGraduationCap, FaBook, FaChartLine } from "react-icons/fa";
+import { FaUser, FaIdBadge, FaGraduationCap, FaBook, FaExclamationCircle } from "react-icons/fa";
+import { useQuery } from 'react-query';
+import newRequest from '../../utils/newRequest'; // Assuming you're using this to make API calls
 
 const TranscriptPage = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfBlob, setPdfBlob] = useState(null);
 
-  const studentData = {
-    name: "JOHN SMITH DOE",
-    rollNo: "220103045",
-    programme: "BTech",
-    department: "Computer Science and Engineering",
-    dateOfAdmission: "2022-07-28",
-    currentSemester: "4th",
-    cgpa: "8.75",
-    contact: "+91 9876543210",
-    photo: "https://example.com/student-photo.jpg",
-    courses: [
-      { code: "CS101", name: "Data Structures", credit: "4", year: "2022", session: "Spring", grade: "A" },
-      { code: "CS102", name: "Algorithms", credit: "4", year: "2022", session: "Fall", grade: "A-" },
-      { code: "CS103", name: "Operating Systems", credit: "4", year: "2023", session: "Spring", grade: "B+" },
-      { code: "CS104", name: "Computer Networks", credit: "3", year: "2023", session: "Fall", grade: "B" },
-      { code: "CS105", name: "Database Systems", credit: "3", year: "2023", session: "Fall", grade: "A" },
-    ],
-    spiCpi: [
-      { semester: "1", spi: "8.5", cpi: "8.5" },
-      { semester: "2", spi: "8.7", cpi: "8.6" },
-      { semester: "3", spi: "8.9", cpi: "8.7" },
-      { semester: "4", spi: "9.1", cpi: "8.8" },
-    ],
+  // Get user data from localStorage
+  const { data: userData } = JSON.parse(localStorage.getItem("currentUser"));
+  const { userId } = userData.user;
+
+  // Fetch student data
+  const { isLoading, error, data: studentData } = useQuery({
+    queryKey: [`student-${userId}`],
+    queryFn: () =>
+      newRequest.get(`/student/${userId}`).then((res) => res.data),
+  });
+
+  // Fetch student grades and courses data using the correct route
+  const { data: gradesData, isLoading: gradesLoading, error: gradesError } = useQuery({
+    queryKey: [`grades-${userId}`],
+    queryFn: () =>
+      newRequest.get(`/student/${userId}/grades`).then((res) => res.data), // Correct API call
+  });
+
+  // Show loading or error states
+  if (isLoading || gradesLoading) {
+    return (
+      <DocumentLayout title="Transcript">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading student information...</p>
+          </div>
+        </div>
+      </DocumentLayout>
+    );
+  }
+
+  if (error || gradesError) {
+    return (
+      <DocumentLayout title="Transcript">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <FaExclamationCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                Error loading student information. Please try again later.
+              </p>
+            </div>
+          </div>
+        </div>
+      </DocumentLayout>
+    );
+  }
+
+  const fullStudent = {
+    name: studentData?.name || "N/A",
+    rollNo: studentData?.rollNo || "N/A",
+    programme: studentData?.program || "N/A",
+    branch: studentData?.department || "N/A",
+    semester: studentData?.semester || "N/A",
+    photo: studentData?.photo || "https://example.com/student-photo.jpg", // Assuming photo exists in studentData
   };
 
   const studentInfo = [
-    { label: "Name", value: studentData.name, icon: <FaUser /> },
-    { label: "Roll No", value: studentData.rollNo, icon: <FaIdBadge /> },
-    { label: "Programme", value: studentData.programme, icon: <FaGraduationCap /> },
-    { label: "Department", value: studentData.department, icon: <FaBook /> },
-    { label: "Current Semester", value: studentData.currentSemester, icon: <FaChartLine /> },
-    { label: "CGPA", value: studentData.cgpa, icon: <FaChartLine /> },
+    { label: "Name", value: fullStudent.name, icon: <FaUser /> },
+    { label: "Roll No", value: fullStudent.rollNo, icon: <FaIdBadge /> },
+    { label: "Programme", value: fullStudent.programme, icon: <FaGraduationCap /> },
+    { label: "Department", value: fullStudent.branch, icon: <FaBook /> },
+    { label: "Current Semester", value: fullStudent.semester, icon: <FaGraduationCap /> }
   ];
 
   const handleGenerate = async () => {
-    if (!studentData) {
-      console.error("Error: Missing student data");
+    if (!studentData || !gradesData) {
+      console.error("Error: Missing student data or grades data");
       return;
     }
-    setIsLoading(true);
+
+    setIsGenerating(true);
+
     try {
-      const blob = await pdf(<TranscriptPDF student={studentData} />).toBlob();
+      const blob = await pdf(
+        <TranscriptPDF
+          student={fullStudent} // Passing full student data
+          courses={gradesData.courses} // Pass courses data from gradesData
+          spiCpi={gradesData.spiCpi} // Pass SPI and CPI data
+        />
+      ).toBlob();
+
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setPdfBlob(blob);
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
@@ -96,19 +141,17 @@ const TranscriptPage = () => {
           </div>
         </div>
 
-        <PDFPreview pdfUrl={pdfUrl} isLoading={isLoading} />
+        <PDFPreview pdfUrl={pdfUrl} isLoading={isGenerating} />
 
         <div className="flex justify-center gap-4 pt-4">
           <button
             onClick={handleGenerate}
-            disabled={isLoading}
+            disabled={isGenerating}
             className={`relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 shadow-md transform hover:scale-105 ${
-              isLoading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-700 hover:bg-blue-600"
+              isGenerating ? "bg-gray-400 cursor-not-allowed" : "bg-blue-700 hover:bg-blue-600"
             }`}
           >
-            {isLoading ? "Generating..." : "Generate Transcript"}
+            {isGenerating ? "Generating..." : "Generate Transcript"}
           </button>
 
           {pdfUrl && (
