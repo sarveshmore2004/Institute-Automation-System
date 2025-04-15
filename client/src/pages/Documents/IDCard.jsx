@@ -14,54 +14,100 @@ import {
   FaPhone,
   FaFilePdf, // Added for Generate button
   FaDownload, // Added for Download button
-  FaInfoCircle // Added for placeholder
+  FaInfoCircle,
+  FaExclamationCircle // Added for placeholder
 } from "react-icons/fa";
+import { useQuery } from "@tanstack/react-query";
+import newRequest from "../../utils/newRequest"; // Assuming you have a utility for API requests
 
 const IDCardPage = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfBlob, setPdfBlob] = useState(null);
 
-  const studentData = {
-    photo: "https://via.placeholder.com/80", // Replace with actual student photo URL
-    name: "JOHN SMITH DOE",
-    rollNo: "220103045",
-    programme: "BTech",
-    branch: "Computer Science and Engineering",
-    validUntil: "2024-05-31",
-    bloodGroup: "B+",
-    contact: "+91 9876543210"
-  };
 
-  // Enhanced studentInfo structure for better styling potential if needed
-  const studentInfo = [
-    { label: "Name", value: studentData.name, icon: <FaUser /> },
-    { label: "Roll No", value: studentData.rollNo, icon: <FaIdCard /> },
-    { label: "Programme", value: studentData.programme, icon: <FaGraduationCap /> },
-    { label: "Department", value: studentData.branch, icon: <FaUniversity /> },
-    { label: "Valid Until", value: studentData.validUntil, icon: <FaCalendarAlt /> },
-    { label: "Blood Group", value: studentData.bloodGroup, icon: <FaTint /> },
-    { label: "Emergency Contact", value: studentData.contact, icon: <FaPhone /> }
-  ];
+  // Get user data from localStorage
+  const {data:userData} = JSON.parse(localStorage.getItem("currentUser"));
+  const {userId} = userData.user;
 
+  // Fetch student data
+  const { isLoading, error, data: studentData } = useQuery({
+    queryKey: [`idcard-${userId}`],
+    queryFn: () =>
+      newRequest.get(`/student/${userId}`).then((res) => res.data),
+  });
+
+    // Show loading or error states
+    if (isLoading) {
+      return (
+        <DocumentLayout title="Bonafide Certificate">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading student information...</p>
+            </div>
+          </div>
+        </DocumentLayout>
+      );
+    }
+  
+    if (error) {
+      return (
+        <DocumentLayout title="Bonafide Certificate">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <FaExclamationCircle className="h-5 w-5 text-red-500" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">
+                  Error loading student information. Please try again later.
+                </p>
+              </div>
+            </div>
+          </div>
+        </DocumentLayout>
+      );
+    }
+    const fullStudent = {
+      photo: studentData?.userId?.profilePicture || "https://via.placeholder.com/80",
+      name: studentData?.userId?.name || "N/A",
+      rollNo: studentData?.rollNo || "N/A",
+      programme: studentData?.program || "N/A",
+      branch: studentData?.department || "N/A",
+      validUntil: "2024-05-31", // optionally fetch this if it's dynamic
+      bloodGroup: studentData?.userId?.bloodGroup || "N/A",
+      contact: studentData?.userId?.contactNo || "N/A"
+    };
+    
+    const studentInfo = [
+      { label: "Name", value: fullStudent.name, icon: <FaUser /> },
+      { label: "Roll No", value: fullStudent.rollNo, icon: <FaIdCard /> },
+      { label: "Programme", value: fullStudent.programme, icon: <FaGraduationCap /> },
+      { label: "Department", value: fullStudent.branch, icon: <FaUniversity /> },
+      { label: "Valid Until", value: fullStudent.validUntil, icon: <FaCalendarAlt /> },
+      { label: "Blood Group", value: fullStudent.bloodGroup, icon: <FaTint /> },
+      { label: "Emergency Contact", value: fullStudent.contact, icon: <FaPhone /> }
+    ];
+
+  // Handle PDF generation
   const handleGenerate = async () => {
-    setIsLoading(true);
-    setPdfUrl(null); // Clear previous preview while generating
+    setIsGenerating(true);
+    setPdfUrl(null); // Clear previous PDF
     setPdfBlob(null);
     try {
-        // Simulate generation time (optional)
-        // await new Promise(resolve => setTimeout(resolve, 1500)); 
-        const blob = await pdf(<IDCardPDF student={studentData} />).toBlob();
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
-        setPdfBlob(blob);
+      const blob = await pdf(<IDCardPDF student={fullStudent} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      // Add user feedback for error state if desired
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
+
+  if (isLoading) return <div>Loading student data...</div>;
+  if (error) return <div>Error fetching student data.</div>;
 
   // handleDownload can be simplified using the anchor tag directly
   // const handleDownload = () => { ... } // Not strictly needed if using <a> tag below
